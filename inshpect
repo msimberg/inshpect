@@ -171,7 +171,10 @@ function includes_check {
                     violating_files+=("${line}")
                     violations=$((violations + 1))
                 fi
-            done < <(${inshpect_rg} -n "^[^/]*(?!.*//).*${pattern}" "${@}")
+
+                # Look for the pattern, but ignore them if they come after
+                # comments //. Then use sort to find only one match per file.
+            done < <(${inshpect_rg} -n "^[^/]*(?!.*//).*${pattern}" "${@}" | sort --unique --field-separator=':' --key=1,1)
 
             if ((violations)); then
                 printf "Include <%s> for %s:\n" "${inshpect_includes[${pattern}]}" "${pattern}"
