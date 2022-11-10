@@ -193,8 +193,8 @@ done
 
 # Find files with matching extensions
 files=$(${inshpect_fd} --type file ${file_extensions_flag} . ${inshpect_directory})
-# Skip files containing "inshpect"
-files=$(${inshpect_rg} --files-without-match ${files})
+# Skip files containing "noinshpect"
+files=$(${inshpect_rg} --files-without-match "noinshpect" ${files})
 
 # Run the checks and report violations
 copyright_check ${files}
