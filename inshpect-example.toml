@@ -1,0 +1,51 @@
+extensions = [
+    "c",
+    "cpp",
+    "css",
+    "cu",
+    "cxx",
+    "h",
+    "hpp",
+    "hxx",
+    "inc",
+    "ipp",
+]
+
+[copyright]
+enable = true
+
+[license]
+enable = true
+pattern = 'Boost[\s]+Software[\s]+License'
+
+[spdx]
+enable = true
+pattern = 'BSL-1.0'
+
+[deprecated_includes]
+enable = true
+patterns = [
+    { pattern = 'boost/move/move\.hpp', replacement = 'utility' },
+    { pattern = 'boost/atomic/atomic\.hpp', replacement = 'boost/atomic.hpp' },
+]
+
+[deprecated_names]
+enable = true
+patterns = [
+    { pattern = '(\bboost::move\b)', replacement = 'std::move' },
+    { pattern = '(\bboost::forward\b)', replacement = 'std::forward' },
+]
+
+[deprecated_macros]
+enable = true
+patterns = [
+    "BOOST_NO_0X_HDR_ARRAY",
+    "BOOST_NO_0X_HDR_CHRONO",
+]
+
+[includes]
+enable = true
+patterns = [
+    { pattern = '(\bstd::make_shared\b)', include = 'memory' },
+    { pattern = '(\bstd::map\b)', include = 'map' },
+]

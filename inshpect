@@ -1,0 +1,207 @@
+#!/usr/bin/env bash
+#
+# inshpect
+#
+# Copyright (c) 2022, ETH Zurich
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Check command line arguments
+inshpect_directory=${1:-.}
+inshpect_config=${2:-inshpect.toml}
+
+if [[ ! -d "${inshpect_directory}" ]]; then
+    echo "Given invalid directory to inspect: \"${inshpect_directory}\"" >&2
+    echo "Usage: inshpect [directory to inspect (default: .)] [configuration file (default: ./inshpect.toml)]" >&2
+    exit 1
+fi
+
+if [[ ! -f "${inshpect_config}" ]]; then
+    echo "Given invalid configuration file: \"${inshpect_config}\"" >&2
+    echo "Usage: inshpect [directory to inspect (default: .)] [configuration file (default: ./inshpect.toml)]" >&2
+    exit 1
+fi
+
+printf "Inspecting directory \"${inshpect_directory}\" with config \"${inshpect_config}\"\n\n" >&2
+
+# Set options
+set -u
+
+# Count the number of total violations
+inshpect_violations=0
+
+# Use ripgrep and fd-find with threads
+inshpect_rg="${INSHPECT_RG:-rg} --engine auto -j${INSHPECT_NUMTHREADS:-1}"
+inshpect_fd="${INSHPECT_FD:-fd} -j${INSHPECT_NUMTHREADS:-1}"
+inshpect_dasel="${INSHPECT_DASEL:-dasel} select --file ${inshpect_config}"
+
+# Files should have the pattern given to positive_check; if they don't they are
+# reported
+function positive_check {
+    out=$(${inshpect_rg} --files-without-match "$1" "${@:2}")
+    if [[ -n "${out}" ]]; then
+        printf "${out}\n"
+        current_violations=$(echo ${out} | wc -l)
+        inshpect_violations=$((inshpect_violations + current_violations))
+    fi
+}
+
+# Files should not have the pattern given to negative_check; if they have it
+# they are reported
+function negative_check {
+    out=$(${inshpect_rg} -n "$1" "${@:3}")
+    if [[ -n "${out}" ]]; then
+        printf "%s\n${out}\n" "${2}"
+        current_violations=$(echo ${out} | wc -l)
+        inshpect_violations=$((inshpect_violations + current_violations))
+    fi
+}
+
+# Define checkers
+function copyright_check {
+    if [[ $(${inshpect_dasel} 'copyright.enable') == "true" ]]; then
+        printf "# Copyright\n\n"
+        positive_check "[Cc]opyright" "${@}"
+        printf "\n"
+    fi
+}
+
+function license_check {
+    if [[ $(${inshpect_dasel} 'license.enable') == "true" ]]; then
+        printf "# License\n\n"
+        pattern=$(${inshpect_dasel} 'license.pattern')
+        positive_check "${pattern}" "${@}"
+        printf "\n"
+    fi
+}
+
+function spdx_check {
+    if [[ $(${inshpect_dasel} 'spdx.enable') == "true" ]]; then
+        printf "# SPDX license identifier\n\n"
+        pattern=$(${inshpect_dasel} 'spdx.pattern')
+        positive_check "SPDX-License-Identifier[\s]*:[\s]+${pattern}" "${@}"
+        printf "\n"
+    fi
+}
+
+function deprecated_includes_check {
+    if [[ $(${inshpect_dasel} 'deprecated_includes.enable') == "true" ]]; then
+        printf "# Deprecated includes\n\n"
+        num_patterns=$(${inshpect_dasel} 'deprecated_includes.patterns.[#]')
+        declare -A inshpect_deprecated_includes
+        if ((num_patterns)); then
+            for index in $(seq 0 $((num_patterns - 1))); do
+                pattern=$(${inshpect_dasel} "deprecated_includes.patterns.[${index}].pattern")
+                replacement=$(${inshpect_dasel} "deprecated_includes.patterns.[${index}].replacement")
+                inshpect_deprecated_includes["${pattern}"]="${replacement}"
+            done
+        fi
+        for pattern in "${!inshpect_deprecated_includes[@]}"; do
+            full_pattern="^\s*#\s*include\s*\s*\"${pattern}\"|^\s*#\s*include\s*\s*<${pattern}>"
+            negative_check "${full_pattern}" "Replace <${pattern}> with <${inshpect_deprecated_includes[${pattern}]}>:" "${@}"
+        done
+        printf "\n"
+    fi
+}
+
+function deprecated_names_check {
+    if [[ $(${inshpect_dasel} 'deprecated_names.enable') == "true" ]]; then
+        printf "# Deprecated names\n\n"
+        num_patterns=$(${inshpect_dasel} 'deprecated_names.patterns.[#]')
+        declare -A inshpect_deprecated_names
+        if ((num_patterns)); then
+            for index in $(seq 0 $((num_patterns - 1))); do
+                pattern=$(${inshpect_dasel} "deprecated_names.patterns.[${index}].pattern")
+                replacement=$(${inshpect_dasel} "deprecated_names.patterns.[${index}].replacement")
+                inshpect_deprecated_names["${pattern}"]="${replacement}"
+            done
+        fi
+        for pattern in "${!inshpect_deprecated_names[@]}"; do
+            negative_check "^[^/]*(?!.*//).*${pattern}" "Replace ${pattern} with ${inshpect_deprecated_names[${pattern}]}:" "${@}"
+        done
+        printf "\n"
+    fi
+}
+
+function disallowed_macros_check {
+    if [[ $(${inshpect_dasel} 'disallowed_macros.enable') == "true" ]]; then
+        printf "# Disallowed macros\n\n"
+        readarray -t inshpect_disallowed_macros < <(${inshpect_dasel} --multiple 'disallowed_macros.patterns.[*]')
+        for pattern in "${inshpect_disallowed_macros[@]}"; do
+            negative_check "^[^/]*(?!.*//).*${pattern}" "Remove ${pattern}:" "${@}"
+        done
+        printf "\n"
+    fi
+}
+
+function includes_check {
+    if [[ $(${inshpect_dasel} 'includes.enable') == "true" ]]; then
+        printf "# Includes\n\n"
+        num_patterns=$(${inshpect_dasel} 'includes.patterns.[#]')
+        declare -A inshpect_includes
+        if ((num_patterns)); then
+            for index in $(seq 0 $((num_patterns - 1))); do
+                pattern=$(${inshpect_dasel} "includes.patterns.[${index}].pattern")
+                include=$(${inshpect_dasel} "includes.patterns.[${index}].include")
+                inshpect_includes["${pattern}"]="${include}"
+            done
+        fi
+        for pattern in "${!inshpect_includes[@]}"; do
+            include=${inshpect_includes[${pattern}]}
+            violating_files=()
+            violations=0
+            # Loop through all the matching lines for the given pattern
+            while read -r line; do
+                # If the match "looks like" it's inside a string skip it. This
+                # is far from a perfect check and has false positives.
+                if [[ $(${inshpect_rg} -n "\"[^\"]*${pattern}[^\"]*\"" <<<"${line}") ]]; then continue; fi
+                match_file=$(cut -f1 -d':' <<<"${line}")
+                match_out=$(${inshpect_rg} -q -n "^\s*#\s*include\s*\"${include}\"|^\s*#\s*include\s*<${include}>" "${match_file}")
+                res=$?
+                # If the include for the pattern isn't found _and_ the file
+                # containing the match is not the required include, report a
+                # violation
+                if [[ "$res" == "1" && "${match_file}" != *"${include}" ]]; then
+                    violating_files+=("${line}")
+                    violations=$((violations + 1))
+                fi
+            done < <(${inshpect_rg} -n "^[^/]*(?!.*//).*${pattern}" "${@}")
+
+            if ((violations)); then
+                printf "Include <%s> for %s:\n" "${inshpect_includes[${pattern}]}" "${pattern}"
+                for violating_file in "${violating_files[@]}"; do
+                    echo "${violating_file}"
+                done
+            fi
+        done
+    fi
+}
+
+file_extensions_flag=""
+for extension in $(${inshpect_dasel} --multiple '.extensions.[*]'); do
+    file_extensions_flag+=" --extension ${extension}"
+done
+
+# Find files with matching extensions
+files=$(${inshpect_fd} --type file ${file_extensions_flag} . ${inshpect_directory})
+# Skip files containing "inshpect"
+files=$(${inshpect_rg} --files-without-match ${files})
+
+# Run the checks and report violations
+copyright_check ${files}
+license_check ${files}
+spdx_check ${files}
+deprecated_includes_check ${files}
+deprecated_names_check ${files}
+disallowed_macros_check ${files}
+includes_check ${files}
+
+# Report the number of violations (if any)
+if ((inshpect_violations)); then
+    printf "\n\nFound ${inshpect_violations} violation(s)"
+    exit 1
+else
+    exit 0
+fi
