@@ -86,6 +86,24 @@ function spdx_check {
     fi
 }
 
+function pragma_once_check {
+    if [[ $(${inshpect_dasel} 'pragma_once.enable') == "true" ]]; then
+        file_extensions_flag=""
+        for extension in $(${inshpect_dasel} --multiple '.pragma_once.extensions.[*]'); do
+            file_extensions_flag+=" --extension ${extension}"
+        done
+
+        # Find files with matching extensions
+        files=$(${inshpect_fd} --type file ${file_extensions_flag} . ${inshpect_directory})
+        # Skip files containing "noinshpect"
+        files=$(${inshpect_rg} --files-without-match "noinshpect" ${files})
+
+        printf "# pragma once\n\n"
+        positive_check "#[\s]*pragma[\s]*once" ${files}
+        printf "\n"
+    fi
+}
+
 function deprecated_includes_check {
     if [[ $(${inshpect_dasel} 'deprecated_includes.enable') == "true" ]]; then
         printf "# Deprecated includes\n\n"
@@ -203,6 +221,7 @@ files=$(${inshpect_rg} --files-without-match "noinshpect" ${files})
 copyright_check ${files}
 license_check ${files}
 spdx_check ${files}
+pragma_once_check
 deprecated_includes_check ${files}
 deprecated_names_check ${files}
 disallowed_macros_check ${files}

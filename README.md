@@ -42,6 +42,11 @@ configuration. The configuration file should contain the following:
   by `SPDX-License-Identifier`.
 - `spdx.pattern` (required when the license check is enabled): regex pattern
   which represents the SPDX license identifier.
+- `pragma_once.enable`: when `true` enables the pragma once check. It checks that
+  the word `#pragma once` exists in the file.
+- `pragma_once.extensions` (required when the pragma once check is enabled):
+  extensions to check for `#pragma once`. These extensions should represent
+  header files.
 - `deprecated_includes.enable`: when `true` enables the deprecated includes
   check. It checks that any pattern given in the patterns does not exist, and
   suggests the replacement otherwise.
