@@ -43,7 +43,7 @@ function positive_check {
     out=$(${inshpect_rg} --files-without-match "$1" "${@:2}")
     if [[ -n "${out}" ]]; then
         printf "${out}\n"
-        current_violations=$(echo ${out} | wc -l)
+        current_violations=$(wc -l <<<"${out}")
         inshpect_violations=$((inshpect_violations + current_violations))
     fi
 }
@@ -54,7 +54,7 @@ function negative_check {
     out=$(${inshpect_rg} -n "$1" "${@:3}")
     if [[ -n "${out}" ]]; then
         printf "%s\n${out}\n" "${2}"
-        current_violations=$(echo ${out} | wc -l)
+        current_violations=$(wc -l <<<"${out}")
         inshpect_violations=$((inshpect_violations + current_violations))
     fi
 }
