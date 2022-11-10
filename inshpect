@@ -99,6 +99,7 @@ function deprecated_includes_check {
             done
         fi
         for pattern in "${!inshpect_deprecated_includes[@]}"; do
+            [[ "${INSHPECT_VERBOSE:-}" == "1" ]] && echo "checking ${pattern}" >&2
             full_pattern="^\s*#\s*include\s*\s*\"${pattern}\"|^\s*#\s*include\s*\s*<${pattern}>"
             negative_check "${full_pattern}" "Replace <${pattern}> with <${inshpect_deprecated_includes[${pattern}]}>:" "${@}"
         done
@@ -119,6 +120,7 @@ function deprecated_names_check {
             done
         fi
         for pattern in "${!inshpect_deprecated_names[@]}"; do
+            [[ "${INSHPECT_VERBOSE:-}" == "1" ]] && echo "checking ${pattern}" >&2
             negative_check "^[^/]*(?!.*//).*${pattern}" "Replace ${pattern} with ${inshpect_deprecated_names[${pattern}]}:" "${@}"
         done
         printf "\n"
@@ -130,6 +132,7 @@ function disallowed_macros_check {
         printf "# Disallowed macros\n\n"
         readarray -t inshpect_disallowed_macros < <(${inshpect_dasel} --multiple 'disallowed_macros.patterns.[*]')
         for pattern in "${inshpect_disallowed_macros[@]}"; do
+            [[ "${INSHPECT_VERBOSE:-}" == "1" ]] && echo "checking ${pattern}" >&2
             negative_check "^[^/]*(?!.*//).*${pattern}" "Remove ${pattern}:" "${@}"
         done
         printf "\n"
@@ -149,6 +152,7 @@ function includes_check {
             done
         fi
         for pattern in "${!inshpect_includes[@]}"; do
+            [[ "${INSHPECT_VERBOSE:-}" == "1" ]] && echo "checking ${pattern}" >&2
             include=${inshpect_includes[${pattern}]}
             violating_files=()
             violations=0

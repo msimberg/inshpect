@@ -77,6 +77,8 @@ involved configuration files.
 - `INSHPECT_DASEL`: the name of the dasel executable, defaults to `dasel`
 - `INSHPECT_NUMTHREADS`: the number of threads to use in `ripgrep` and `fd`,
   defaults to `1`
+- `INSHPECT_VERBOSE`: when set to `1` (exactly!) prints each pattern that
+  `inshpect` checks
 
 # Current limitations
 
