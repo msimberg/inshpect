@@ -94,12 +94,12 @@ function pragma_once_check {
         done
 
         # Find files with matching extensions
-        files=$(${inshpect_fd} --type file ${file_extensions_flag} . ${inshpect_directory})
+        pragma_once_files=$(${inshpect_fd} --type file ${file_extensions_flag} . ${inshpect_directory})
         # Skip files containing "noinshpect"
-        files=$(${inshpect_rg} --files-without-match "noinshpect" ${files})
+        pragma_once_files=$(${inshpect_rg} --files-without-match "noinshpect" ${pragma_once_files})
 
         printf "# pragma once\n\n"
-        positive_check "#[\s]*pragma[\s]*once" ${files}
+        positive_check "#[\s]*pragma[\s]*once" ${pragma_once_files}
         printf "\n"
     fi
 }
