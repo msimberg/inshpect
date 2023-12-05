@@ -35,7 +35,7 @@ inshpect_violations=0
 # Use ripgrep and fd-find with threads
 inshpect_rg="${INSHPECT_RG:-rg} --engine auto -j${INSHPECT_NUMTHREADS:-1}"
 inshpect_fd="${INSHPECT_FD:-fd} -j${INSHPECT_NUMTHREADS:-1}"
-inshpect_dasel="${INSHPECT_DASEL:-dasel} select --file ${inshpect_config}"
+inshpect_dasel="${INSHPECT_DASEL:-dasel} -w - --file ${inshpect_config}"
 
 # Files should have the pattern given to positive_check; if they don't they are
 # reported
@@ -89,7 +89,7 @@ function spdx_check {
 function pragma_once_check {
     if [[ $(${inshpect_dasel} 'pragma_once.enable') == "true" ]]; then
         file_extensions_flag=""
-        for extension in $(${inshpect_dasel} --multiple '.pragma_once.extensions.[*]'); do
+        for extension in $(${inshpect_dasel} '.pragma_once.extensions.all()'); do
             file_extensions_flag+=" --extension ${extension}"
         done
 
@@ -107,7 +107,7 @@ function pragma_once_check {
 function deprecated_includes_check {
     if [[ $(${inshpect_dasel} 'deprecated_includes.enable') == "true" ]]; then
         printf "# Deprecated includes\n\n"
-        num_patterns=$(${inshpect_dasel} 'deprecated_includes.patterns.[#]')
+        num_patterns=$(${inshpect_dasel} 'deprecated_includes.patterns.count()')
         declare -A inshpect_deprecated_includes
         if ((num_patterns)); then
             for index in $(seq 0 $((num_patterns - 1))); do
@@ -128,7 +128,7 @@ function deprecated_includes_check {
 function deprecated_names_check {
     if [[ $(${inshpect_dasel} 'deprecated_names.enable') == "true" ]]; then
         printf "# Deprecated names\n\n"
-        num_patterns=$(${inshpect_dasel} 'deprecated_names.patterns.[#]')
+        num_patterns=$(${inshpect_dasel} 'deprecated_names.patterns.count()')
         declare -A inshpect_deprecated_names
         if ((num_patterns)); then
             for index in $(seq 0 $((num_patterns - 1))); do
@@ -148,7 +148,7 @@ function deprecated_names_check {
 function disallowed_macros_check {
     if [[ $(${inshpect_dasel} 'disallowed_macros.enable') == "true" ]]; then
         printf "# Disallowed macros\n\n"
-        readarray -t inshpect_disallowed_macros < <(${inshpect_dasel} --multiple 'disallowed_macros.patterns.[*]')
+        readarray -t inshpect_disallowed_macros < <(${inshpect_dasel} 'disallowed_macros.patterns.all()')
         for pattern in "${inshpect_disallowed_macros[@]}"; do
             [[ "${INSHPECT_VERBOSE:-}" == "1" ]] && echo "checking ${pattern}" >&2
             negative_check "^[^/]*(?!.*//).*${pattern}" "Remove ${pattern}:" "${@}"
@@ -160,7 +160,7 @@ function disallowed_macros_check {
 function includes_check {
     if [[ $(${inshpect_dasel} 'includes.enable') == "true" ]]; then
         printf "# Includes\n\n"
-        num_patterns=$(${inshpect_dasel} 'includes.patterns.[#]')
+        num_patterns=$(${inshpect_dasel} 'includes.patterns.count()')
         declare -A inshpect_includes
         if ((num_patterns)); then
             for index in $(seq 0 $((num_patterns - 1))); do
@@ -208,7 +208,7 @@ function includes_check {
 }
 
 file_extensions_flag=""
-for extension in $(${inshpect_dasel} --multiple '.extensions.[*]'); do
+for extension in $(${inshpect_dasel} '.extensions.all()'); do
     file_extensions_flag+=" --extension ${extension}"
 done
 

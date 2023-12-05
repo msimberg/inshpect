@@ -11,9 +11,9 @@ for use of names and includes that should or shouldn't be there.
 - [fd](https://github.com/sharkdp/fd), for quickly finding files (with
   .gitignore taken into account as is the default behaviour of fd)
 - [ripgrep](https://github.com/BurntSushi/ripgrep), for quickly searching files
-- [dasel](https://github.com/TomWright/dasel), for reading the configuration
-  file (which can be any type supported by dasel (currently toml, yaml, and
-  json))
+- [dasel](https://github.com/TomWright/dasel) version 2, for reading the
+  configuration file (which can be any type supported by dasel (currently toml,
+  yaml, and json))
 
 # Usage
 
