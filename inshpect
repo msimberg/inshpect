@@ -107,7 +107,7 @@ function pragma_once_check {
 function deprecated_includes_check {
     if [[ $(${inshpect_dasel} 'deprecated_includes.enable') == "true" ]]; then
         printf "# Deprecated includes\n\n"
-        num_patterns=$(${inshpect_dasel} 'deprecated_includes.patterns.count()')
+        num_patterns=$(${inshpect_dasel} 'deprecated_includes.patterns.all().count()')
         declare -A inshpect_deprecated_includes
         if ((num_patterns)); then
             for index in $(seq 0 $((num_patterns - 1))); do
@@ -128,7 +128,7 @@ function deprecated_includes_check {
 function deprecated_names_check {
     if [[ $(${inshpect_dasel} 'deprecated_names.enable') == "true" ]]; then
         printf "# Deprecated names\n\n"
-        num_patterns=$(${inshpect_dasel} 'deprecated_names.patterns.count()')
+        num_patterns=$(${inshpect_dasel} 'deprecated_names.patterns.all().count()')
         declare -A inshpect_deprecated_names
         if ((num_patterns)); then
             for index in $(seq 0 $((num_patterns - 1))); do
@@ -160,7 +160,7 @@ function disallowed_macros_check {
 function includes_check {
     if [[ $(${inshpect_dasel} 'includes.enable') == "true" ]]; then
         printf "# Includes\n\n"
-        num_patterns=$(${inshpect_dasel} 'includes.patterns.count()')
+        num_patterns=$(${inshpect_dasel} 'includes.patterns.all().count()')
         declare -A inshpect_includes
         if ((num_patterns)); then
             for index in $(seq 0 $((num_patterns - 1))); do
